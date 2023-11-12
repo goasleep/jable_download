@@ -13,9 +13,6 @@ total_size = 0
 
 
 def concatenate_ts_files(origin_dir, output_filename):
-    # Parse m3u8 file
-    # ts_urls = [line.strip() for line in r.text.splitlines() if line.endswith('.ts')]
-    # Concatenate ts files
     total_size = len(glob.glob(os.path.join(origin_dir, "*.mp4")))
     with open(f"{origin_dir}/filelist.txt", "w") as f:
         for i in range(total_size):
@@ -27,13 +24,9 @@ def concatenate_ts_files(origin_dir, output_filename):
     cmd = f"ffmpeg -y -f concat -safe 0 -i {origin_dir}/filelist.txt -c copy {origin_dir}/{output_filename}"
     subprocess.run(cmd, shell=True)
 
-    # Clean up
-    # for i in range(total_size):
-    #     os.remove(f'{i:04d}.ts')
-    # os.remove('filelist.txt')
-
 
 if __name__ == "__main__":
+    """python3 concatenate_files.py ./abf-002 abf-002.mp4 """
     origin_dir = sys.argv[1]
     output_filename = sys.argv[2] if len(sys.argv) > 2 else "output.mp4"
 

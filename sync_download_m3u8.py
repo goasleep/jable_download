@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import requests
@@ -30,8 +31,11 @@ def download_ts(ts_url, ts_filename, output_dir, contentKey, vt, index, total):
     print(f"Downloaded {ts_filename}, processing: {index/total*100:.2f}%")
 
 
-def get_segment_and_ci(url):
-    m3u8obj = m3u8.load(uri=url, headers=headers)
+def get_segment_and_ci(url,from_m3u8_file=None):
+    if from_m3u8_file:
+        m3u8obj = m3u8.load(from_m3u8_file)
+    else:
+        m3u8obj = m3u8.load(uri=url, headers=headers)
 
     for key in m3u8obj.keys:
         if key:
@@ -61,10 +65,10 @@ def err_call_back(err):
     print(f"出错啦~ error：{str(err)}")
 
 
-def download(m3u8_url, output_dir, max_concurrency=5):
+def download(m3u8_url, output_dir,from_m3u8_file=None, max_concurrency=5):
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    ts_urls, contentKey, vt = get_segment_and_ci(m3u8_url)
+    ts_urls, contentKey, vt = get_segment_and_ci(m3u8_url,from_m3u8_file=from_m3u8_file)
 
     # Download ts files
     pool = multiprocessing.Pool(max_concurrency)
@@ -89,28 +93,41 @@ def download(m3u8_url, output_dir, max_concurrency=5):
         # download_ts(_ts_url, ts_filename,ci)
         results.append(result)
 
-    # Wait for all processes to finish
-    for result in results:
-        result.wait()
 
     # Close the pool
     pool.close()
     pool.join()
+
+    # Wait for all processes to finish
+    for result in results:
+        try:
+            task_result = result.get(timeout=10)
+            print(task_result)
+        except TimeoutError:
+            result.terminate()
+            print("Task timed out!")
+
+        # result.wait(timeout=10)
+
+
     print("finish")
 
 
 if __name__ == "__main__":
     """
-    python sync_download_m3u8.py https://masno-terer.mushroomtrack.com/hls/FA12CuD9v-aFVIUwBCqrEw/1697205463/22000/22265/22265.m3u8 ./hmn-120
-    python sync_download_m3u8.py https://masno-terer.mushroomtrack.com/hls/7QGXczaduCGmaVCM7G3gZw/1697207205/21000/21203/21203.m3u8 ./ssis-298
-    """
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} M3U8_URL [OUTPUT_FILENAME]")
-        sys.exit(1)
+    python sync_download_m3u8.py ./mide-922 --url https://masmao-toera.mushroomtrack.com/hls/vnVOyYH4O9KoEU4mL_hl9Q/1699783708/15000/15755/15755.m3u8 
+    python sync_download_m3u8.py ./mide-922 -f ./test.m3u8 
 
-    m3u8_url = sys.argv[1]
-    output_filename = sys.argv[2] if len(sys.argv) > 2 else "."
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('args', metavar='A', type=str, nargs=1, help='Two arguments A1 and A2')
+    parser.add_argument('-f', '--from_m3u8_file', help='file')
+    parser.add_argument('-u', '--url', help='url')
+    args = parser.parse_args()
+    m3u8_url = args.url
+    output_filename = args.args[0]
     # m3u8_url = "https://ziiom-almala.mushroomtrack.com/hls/oTEG7M1Ffh4Uz3mRLNOs3A/1696587980/35000/35278/35278.m3u8"
     # output_filename = "./m3u8_tool/mimk-131"
 
-    download(m3u8_url, output_filename)
+    
+    download(m3u8_url, output_filename,args.from_m3u8_file)
