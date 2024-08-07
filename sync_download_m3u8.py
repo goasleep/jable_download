@@ -19,7 +19,7 @@ total_size = 0
 def download_ts(ts_url, ts_filename, output_dir, contentKey, vt, index, total):
     print(f"Downloading {ts_url}")
     ci = AES.new(contentKey, AES.MODE_CBC, vt)
-    with requests.get(ts_url, stream=True, headers=headers) as r:
+    with requests.get(ts_url, stream=True, headers=headers,timeout=10) as r:
         r.raise_for_status()
         if r.status_code == 200:
             content_ts = r.content
@@ -59,7 +59,7 @@ def get_segment_and_ci(url,from_m3u8_file=None):
         vt = ""
         contentKey = ""
     return ts_urls, contentKey, vt
-
+ 
 
 def err_call_back(err):
     print(f"出错啦~ error：{str(err)}")
@@ -106,16 +106,13 @@ def download(m3u8_url, output_dir,from_m3u8_file=None, max_concurrency=5):
         except TimeoutError:
             result.terminate()
             print("Task timed out!")
-
-        # result.wait(timeout=10)
-
-
     print("finish")
 
 
 if __name__ == "__main__":
     """
-    python sync_download_m3u8.py ./mide-922 --url https://masmao-toera.mushroomtrack.com/hls/vnVOyYH4O9KoEU4mL_hl9Q/1699783708/15000/15755/15755.m3u8 
+    python sync_download_m3u8.py ./mide-922 --url https://eulao-monter.mushroomtrack.com/hls/d_XVJYEoYLAtodBg1vDCAA/1699788106/15000/15755/15755.m3u8 
+    python sync_download_m3u8.py ./ssis-723 --url https://zippa-hala.mushroomtrack.com/hls/tQ5SaVcvsVGewNRyQnW24A/1701892070/34000/34277/34277.m3u8
     python sync_download_m3u8.py ./mide-922 -f ./test.m3u8 
 
     """
